@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "es2019",
+    "module": "commonjs",
+    "moduleResolution": "Node",
+    "allowJs": true,
+    "checkJs": false,
+    "baseUrl": "./src",
+    "outDir": "./dist",
+    "sourceMap": true,
+    "strict": true,
+    "resolveJsonModule": true,
+    "strictNullChecks": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": false, /* Leaving false because event/context are irrelevant */
+    "esModuleInterop": true,
+    "paths": {
+      "*": [
+        "node_modules/",
+      ]
+    }
+  },
+  "include": [
+    "src/**/*.ts", "tests/**/*.js", "tests/**/*.ts", "scripts/**/*.ts", "stack/**/*.ts", "tests/**/*.ts", "webpack.config.js", "tests/pact/test_helper.js", "tests/pact/publish.js"
+  ],
+  "exclude": [
+
+  ]
+}

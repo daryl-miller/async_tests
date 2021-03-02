@@ -1,0 +1,11 @@
+node_modules/
+dist/
+# CDK asset staging directory
+.cdk.staging
+cdk.out
+tmp/
+cdk.context.json
+pacts/
+logs/
+.nyc_output/
+coverage/
