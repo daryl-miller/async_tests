@@ -1,15 +1,35 @@
-import {expect} from './test_helper'
-import {testFunction, throwsError} from '../src/index'
+import {expect, sinon} from './test_helper'
+import {testFunction, throwsError, deleteUser} from '../src/index'
+import * as dbModule from '../src/stub'
 
-//You can't check side affects that throw with #async
-//Not recommended as a result!
+//Pros:
+// Can test side effects
+// Low chance of a test passing when it shouldn't
+//Cons: Can't test async functions that  throw
 describe('#async', () => {
   it('Postive Testcase', async () => {
     const result = await testFunction() //passes
     expect(result).to.eq(true)
   })
+  it('Tests side effects', async () => { //passess
+    //Setup
+    const userIdStub = 'stub-id'
+    const username = 'aUsername'
+    const expected = 'deletedStub'
+    const deleteUserFromDbStub = sinon.stub(dbModule, 'findUser').resolves(userIdStub)
+    const findUserStub = sinon.stub(dbModule, 'deleteUserFromDB').resolves(expected)
+
+    //Act
+    const result = await deleteUser(username)
+
+    //Assert
+    expect(deleteUserFromDbStub).to.have.been.calledWith(username)
+    expect(findUserStub).to.have.been.calledWith(userIdStub)
+    expect(result).eq(expected)
+
+  })
   it('Negative testcase', async () => {
-    expect(await throwsError()).to.be.rejectedWith(Error)//Error doesn't get caught or evaluated. It exits out of the IT
+    expect(async () => await throwsError()).to.throw(Error)//Error doesn't get caught or evaluated. It exits out of the IT
   })
   it('Negative testcase', async () => {
     const result = await throwsError() //Error doesn't get caught or evaluated. It exits out of the IT
@@ -25,10 +45,10 @@ describe('#async', () => {
     await expect(async () => await throwsError()).to.throw //Doesn't work as it doesn't wrap the promise, so it just throws and doesn't get evaluated and exits the IT
   })
 })
-//Not recommended
-//You can't return multiple assertions within the same test case
-//Relies on callback
-//Doesn't allow you to chain assertions
+//Pros: You get to use call backs
+//Cons:
+// You get to use call backs
+// Can fail silently
 describe('#Done', () => {
   it('Positive test case', (done) => {
     expect(testFunction()).to.eventually.eq(true).notify(done) //passes
@@ -44,14 +64,18 @@ describe('#Done', () => {
   it('negative test case', (done) => {
     expect(throwsError()).to.be.rejectedWith(Error).notify(done) //passes
   })
+
+  it('negative test case', (done) => {
+    expect(testFunction()).to.eventually.eq(false)  //Isn't evaluated
+    expect(throwsError()).to.be.rejectedWith(Error).notify(done) //passes
+  })
   //Can't handle multiple promises
 })
-//Handles all use cases
-//The ITs functions can consume promises but the base assertions can't so you need to use chai as promised e.g. rejectedWith, eventually, should etc.
-//If you don't have the return the IT thinks it's testing functions and doesn't have any errors raised by the assertions
-//The return passes the assertion promise to the IT which gets evaluated if the assertion passed or not
-//It's really easy to forget a return so I recommend that you always check your functions for pass/failures
-describe('#Return', () => { //Preferred method
+//Pros: assertions are promise aware
+//Cons:
+// Tests can fail silently
+// Requires promise.all to wrap assertions
+describe('#Return', () => {
   it('Positive test case', () => {
     return expect(testFunction()).to.eventually.eq(true) //passes
   })
@@ -65,6 +89,26 @@ describe('#Return', () => { //Preferred method
     return Promise.all([ //passes
       expect(testFunction()).to.eventually.eq(true),
       expect(throwsError()).to.be.rejectedWith(Error),
+    ])
+  })
+  it('Tests side effects', () => {
+    //Doesn't work. The stubs aren't promises so they can't be wrapped by chai properly.
+    //So they get immediately evaluated before the promise resolves.
+
+    //Setup
+    const userIdStub = 'stub-id'
+    const username = 'aUsername'
+    const expected = 'deletedStub'
+    const deleteUserFromDbStub = sinon.stub(dbModule, 'findUser').resolves(userIdStub)
+    const findUserStub = sinon.stub(dbModule, 'deleteUserFromDB').resolves(expected)
+
+    //Act
+
+    //Assert
+    return Promise.all([
+      expect(deleteUser(username)).eventually.eq(expected),
+      expect(deleteUserFromDbStub).to.have.been.calledWith(username),
+      expect(findUserStub).to.have.been.calledWith(userIdStub)
     ])
   })
 })
